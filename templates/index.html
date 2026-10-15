@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lost & Found Campus</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<style>
+  body{background:#f4f6f9;}
+  .navbar{background:linear-gradient(90deg,#1f3c88,#2a52be);}
+  .hero{background:linear-gradient(135deg,#1f3c88,#3f6fd1);color:#fff;border-radius:14px;}
+  .card{border-radius:14px;}
+  .item-img{height:170px;object-fit:cover;}
+  .badge-Lost{background:#f8d7da;color:#842029;}
+  .badge-Found{background:#cfe2ff;color:#084298;}
+  .badge-ClaimPending, .badge-Pending{background:#fff3cd;color:#664d03;}
+  .badge-Returned, .badge-Approved{background:#d1e7dd;color:#0f5132;}
+  .badge-Rejected{background:#e2e3e5;color:#41464b;}
+  .section{display:none;}
+  .section.active{display:block;}
+</style>
+</head>
+<body>
+
+<!-- ============ NAVBAR ============ -->
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="#" onclick="showSection('home')"><i class="bi bi-search"></i> Lost & Found</a>
+    <div class="ms-auto d-flex gap-2 align-items-center" id="navLinks"></div>
+  </div>
+</nav>
+
+<div class="container my-4">
+  <div id="alertBox"></div>
+
+  <!-- ============ HOME ============ -->
+  <section id="home" class="section active">
+    <div class="hero p-5 text-center mb-5">
+      <h1 class="fw-bold">Lost Something? Find It Here.</h1>
+      <p class="lead">A centralized campus platform to report, search and reclaim lost items.</p>
+      <button class="btn btn-light" onclick="requireLogin('report-lost')">Report Lost Item</button>
+      <button class="btn btn-outline-light" onclick="requireLogin('report-found')">Report Found Item</button>
+      <button class="btn btn-warning text-dark" onclick="showSection('search')">Search Items</button>
+    </div>
+    <div class="row text-center g-3 mb-4">
+      <div class="col-md-3"><div class="card p-3"><h3 id="statLost">0</h3><p class="text-muted mb-0">Lost</p></div></div>
+      <div class="col-md-3"><div class="card p-3"><h3 id="statFound">0</h3><p class="text-muted mb-0">Found</p></div></div>
+      <div class="col-md-3"><div class="card p-3"><h3 id="statReturned">0</h3><p class="text-muted mb-0">Returned</p></div></div>
+      <div class="col-md-3"><div class="card p-3"><h3 id="statUsers">0</h3><p class="text-muted mb-0">Students</p></div></div>
+    </div>
+    <h4>Recently Reported</h4>
+    <div class="row g-3" id="recentItems"></div>
+  </section>
+
+  <!-- ============ LOGIN ============ -->
+  <section id="login" class="section">
+    <div class="row justify-content-center"><div class="col-md-5">
+      <div class="card p-4"><h4 class="mb-3">Login</h4>
+        <input class="form-control mb-2" id="loginEmail" placeholder="Email">
+        <input class="form-control mb-3" id="loginPassword" type="password" placeholder="Password">
+        <button class="btn btn-primary w-100" onclick="login()">Login</button>
+        <p class="text-center mt-3">No account? <a href="#" onclick="showSection('register')">Register</a></p>
+        <p class="text-muted small text-center">Admin demo: admin@campus.edu / admin123</p>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- ============ REGISTER ============ -->
+  <section id="register" class="section">
+    <div class="row justify-content-center"><div class="col-md-5">
+      <div class="card p-4"><h4 class="mb-3">Create Account</h4>
+        <input class="form-control mb-2" id="regName" placeholder="Full Name">
+        <input class="form-control mb-2" id="regEmail" placeholder="Email">
+        <input class="form-control mb-2" id="regPassword" type="password" placeholder="Password">
+        <input class="form-control mb-3" id="regConfirm" type="password" placeholder="Confirm Password">
+        <button class="btn btn-primary w-100" onclick="registerUser()">Register</button>
+        <p class="text-center mt-3">Already registered? <a href="#" onclick="showSection('login')">Login</a></p>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- ============ REPORT LOST ============ -->
+  <section id="report-lost" class="section">
+    <div class="row justify-content-center"><div class="col-md-7">
+      <div class="card p-4"><h4 class="mb-3 text-danger">Report Lost Item</h4>
+        <form id="lostForm" onsubmit="return reportItem(event,'Lost')">
+          <input class="form-control mb-2" name="item_name" placeholder="Item Name" required>
+          <select class="form-select mb-2" name="category" required>
+            <option value="">Category</option>
+            <option>Electronics</option><option>Stationery</option><option>Books</option>
+            <option>Clothing</option><option>ID Card / Documents</option><option>Bags</option><option>Other</option>
+          </select>
+          <textarea class="form-control mb-2" name="description" placeholder="Description"></textarea>
+          <input class="form-control mb-2" type="date" name="date" required>
+          <input class="form-control mb-2" name="location" placeholder="Location Lost" required>
+          <input class="form-control mb-3" type="file" name="image" accept=".jpg,.jpeg,.png">
+          <button class="btn btn-danger w-100">Submit</button>
+        </form>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- ============ REPORT FOUND ============ -->
+  <section id="report-found" class="section">
+    <div class="row justify-content-center"><div class="col-md-7">
+      <div class="card p-4"><h4 class="mb-3 text-primary">Report Found Item</h4>
+        <form id="foundForm" onsubmit="return reportItem(event,'Found')">
+          <input class="form-control mb-2" name="item_name" placeholder="Item Name" required>
+          <select class="form-select mb-2" name="category" required>
+            <option value="">Category</option>
+            <option>Electronics</option><option>Stationery</option><option>Books</option>
+            <option>Clothing</option><option>ID Card / Documents</option><option>Bags</option><option>Other</option>
+          </select>
+          <textarea class="form-control mb-2" name="description" placeholder="Description"></textarea>
+          <input class="form-control mb-2" type="date" name="date" required>
+          <input class="form-control mb-2" name="location" placeholder="Location Found" required>
+          <input class="form-control mb-3" type="file" name="image" accept=".jpg,.jpeg,.png">
+          <button class="btn btn-primary w-100">Submit</button>
+        </form>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- ============ SEARCH ============ -->
+  <section id="search" class="section">
+    <h4 class="mb-3">Search Items</h4>
+    <div class="card p-3 mb-4">
+      <div class="row g-2">
+        <div class="col-md-3"><input class="form-control" id="fName" placeholder="Item name"></div>
+        <div class="col-md-3"><input class="form-control" id="fLocation" placeholder="Location"></div>
+        <div class="col-md-2">
+          <select class="form-select" id="fType"><option value="">Any Type</option><option>Lost</option><option>Found</option></select>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" id="fStatus"><option value="">Any Status</option><option>Lost</option><option>Found</option><option>Claim Pending</option><option>Returned</option></select>
+        </div>
+        <div class="col-md-2"><button class="btn btn-primary w-100" onclick="runSearch()">Search</button></div>
+      </div>
+    </div>
+    <div class="row g-3" id="searchResults"></div>
+  </section>
+
+  <!-- ============ ITEM DETAILS ============ -->
+  <section id="item-details" class="section">
+    <div class="row justify-content-center"><div class="col-md-8">
+      <div class="card p-4" id="itemDetailsBox"></div>
+    </div></div>
+  </section>
+
+  <!-- ============ CLAIM FORM ============ -->
+  <section id="claim-form" class="section">
+    <div class="row justify-content-center"><div class="col-md-7">
+      <div class="card p-4">
+        <h4 class="mb-3 text-success">Claim This Item</h4>
+        <form onsubmit="return submitClaim(event)">
+          <input type="hidden" id="claimItemId">
+          <textarea class="form-control mb-2" id="claimReason" placeholder="Why do you believe this is yours?" required></textarea>
+          <textarea class="form-control mb-3" id="claimProof" placeholder="Additional proof / details (optional)"></textarea>
+          <button class="btn btn-success w-100">Submit Claim</button>
+        </form>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- ============ MY REPORTS ============ -->
+  <section id="my-reports" class="section">
+    <h4 class="mb-3">My Reported Items</h4>
+    <table class="table bg-white shadow-sm"><thead><tr><th>Name</th><th>Type</th><th>Location</th><th>Status</th></tr></thead>
+      <tbody id="myReportsBody"></tbody></table>
+  </section>
+
+  <!-- ============ MY CLAIMS ============ -->
+  <section id="my-claims" class="section">
+    <h4 class="mb-3">My Claim Requests</h4>
+    <table class="table bg-white shadow-sm"><thead><tr><th>Item</th><th>Reason</th><th>Status</th></tr></thead>
+      <tbody id="myClaimsBody"></tbody></table>
+  </section>
+
+  <!-- ============ ADMIN DASHBOARD ============ -->
+  <section id="admin-dashboard" class="section">
+    <h4 class="mb-3">Admin Dashboard</h4>
+    <div class="row text-center g-3 mb-4">
+      <div class="col"><div class="card p-3"><h5 id="aUsers">0</h5><small>Users</small></div></div>
+      <div class="col"><div class="card p-3"><h5 id="aLost">0</h5><small>Lost</small></div></div>
+      <div class="col"><div class="card p-3"><h5 id="aFound">0</h5><small>Found</small></div></div>
+      <div class="col"><div class="card p-3"><h5 id="aReturned">0</h5><small>Returned</small></div></div>
+      <div class="col"><div class="card p-3"><h5 id="aPending">0</h5><small>Pending Claims</small></div></div>
+    </div>
+    <table class="table bg-white shadow-sm">
+      <thead><tr><th>Item</th><th>Type</th><th>Reporter</th><th>Status</th><th></th></tr></thead>
+      <tbody id="adminItemsBody"></tbody>
+    </table>
+  </section>
+
+  <!-- ============ ADMIN CLAIMS ============ -->
+  <section id="admin-claims" class="section">
+    <h4 class="mb-3">Claim Verification</h4>
+    <div class="row g-3" id="adminClaimsBody"></div>
+  </section>
+
+</div>
+
+<footer class="text-center py-3 text-white" style="background:#1f3c88;">
+  <small>&copy; 2026 Lost & Found Campus - Single Page Edition</small>
+</footer>
+
+<script>
+/* ================= GLOBAL STATE ================= */
+let currentUser = null;   // { name, role } once logged in
+
+/* ================= NAVIGATION ================= */
+function showSection(id){
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  // Load data needed for that section
+  if(id === "home") loadHome();
+  if(id === "search") runSearch();
+  if(id === "my-reports") loadMyReports();
+  if(id === "my-claims") loadMyClaims();
+  if(id === "admin-dashboard") loadAdminDashboard();
+  if(id === "admin-claims") loadAdminClaims();
+}
+
+function requireLogin(targetSection){
+  if(!currentUser){ showAlert("Please login first.", "warning"); showSection("login"); return; }
+  showSection(targetSection);
+}
+
+function showAlert(msg, type="info"){
+  document.getElementById("alertBox").innerHTML =
+    `<div class="alert alert-${type} alert-dismissible fade show">${msg}
+     <button class="btn-close" data-bs-dismiss="alert"></button></div>`;
+}
+
+function badge(status){
+  return `<span class="badge badge-${status.replace(" ","")}">${status}</span>`;
+}
+
+/* ================= AUTH ================= */
+async function checkSession(){
+  const res = await fetch("/api/session");
+  const data = await res.json();
+  if(data.loggedIn){ currentUser = data; } else { currentUser = null; }
+  renderNav();
+}
+
+function renderNav(){
+  const box = document.getElementById("navLinks");
+  if(currentUser){
+    let links = `<span class="text-white-50 small"><i class="bi bi-person-circle"></i> ${currentUser.name}</span>`;
+    if(currentUser.role === "admin"){
+      links += `<a class="btn btn-sm btn-outline-light" href="#" onclick="showSection('admin-dashboard')">Dashboard</a>
+                 <a class="btn btn-sm btn-outline-light" href="#" onclick="showSection('admin-claims')">Claims</a>`;
+    } else {
+      links += `<a class="btn btn-sm btn-outline-light" href="#" onclick="showSection('report-lost')">Report Lost</a>
+                 <a class="btn btn-sm btn-outline-light" href="#" onclick="showSection('report-found')">Report Found</a>
+                 <a class="btn btn-sm btn-outline-light" href="#" onclick="showSection('my-reports')">My Reports</a>
+                 <a class="btn btn-sm btn-outline-light" href="#" onclick="showSection('my-claims')">My Claims</a>`;
+    }
+    links += `<a class="btn btn-sm btn-light" href="#" onclick="logout()">Logout</a>`;
+    box.innerHTML = links;
+  } else {
+    box.innerHTML = `<a class="btn btn-sm btn-outline-light" href="#" onclick="showSection('login')">Login</a>
+                      <a class="btn btn-sm btn-light" href="#" onclick="showSection('register')">Register</a>`;
+  }
+}
+
+async function registerUser(){
+  const fd = new FormData();
+  fd.append("name", document.getElementById("regName").value);
+  fd.append("email", document.getElementById("regEmail").value);
+  fd.append("password", document.getElementById("regPassword").value);
+  fd.append("confirm_password", document.getElementById("regConfirm").value);
+  const res = await fetch("/api/register", { method: "POST", body: fd });
+  const data = await res.json();
+  if(res.ok){ showAlert(data.message, "success"); showSection("login"); }
+  else showAlert(data.error, "danger");
+}
+
+async function login(){
+  const fd = new FormData();
+  fd.append("email", document.getElementById("loginEmail").value);
+  fd.append("password", document.getElementById("loginPassword").value);
+  const res = await fetch("/api/login", { method: "POST", body: fd });
+  const data = await res.json();
+  if(res.ok){
+    currentUser = data; renderNav();
+    showAlert(`Welcome, ${data.name}!`, "success");
+    showSection(data.role === "admin" ? "admin-dashboard" : "home");
+  } else showAlert(data.error, "danger");
+}
+
+async function logout(){
+  await fetch("/api/logout", { method: "POST" });
+  currentUser = null; renderNav();
+  showAlert("Logged out.", "info");
+  showSection("home");
+}
+
+/* ================= HOME ================= */
+async function loadHome(){
+  const stats = await (await fetch("/api/stats")).json();
+  statLost.textContent = stats.lost; statFound.textContent = stats.found;
+  statReturned.textContent = stats.returned; statUsers.textContent = stats.users;
+
+  const items = await (await fetch("/api/items")).json();
+  recentItems.innerHTML = items.slice(0,6).map(itemCard).join("") || "<p class='text-muted'>No items yet.</p>";
+}
+
+function itemCard(item){
+  const img = item.image ? `/uploads/${item.image}` : "";
+  return `<div class="col-md-4">
+    <div class="card h-100">
+      ${img ? `<img src="${img}" class="card-img-top item-img">` : `<div class="item-img bg-light d-flex align-items-center justify-content-center"><i class="bi bi-image fs-1 text-muted"></i></div>`}
+      <div class="card-body">
+        <div class="d-flex justify-content-between"><h6>${item.item_name}</h6>${badge(item.status)}</div>
+        <p class="small text-muted mb-2">${item.category} &middot; ${item.location}</p>
+        <button class="btn btn-sm btn-outline-primary w-100" onclick="viewItem(${item.id})">View Details</button>
+      </div>
+    </div></div>`;
+}
+
+/* ================= REPORT LOST / FOUND ================= */
+async function reportItem(e, type){
+  e.preventDefault();
+  const form = e.target;
+  const fd = new FormData(form);
+  fd.append("type", type);
+  const res = await fetch("/api/items", { method: "POST", body: fd });
+  const data = await res.json();
+  if(res.ok){ showAlert(data.message, "success"); form.reset(); showSection("my-reports"); }
+  else showAlert(data.error, "danger");
+  return false;
+}
+
+/* ================= SEARCH ================= */
+async function runSearch(){
+  const params = new URLSearchParams();
+  if(fName.value) params.append("item_name", fName.value);
+  if(fLocation.value) params.append("location", fLocation.value);
+  if(fType.value) params.append("type", fType.value);
+  if(fStatus.value) params.append("status", fStatus.value);
+  const items = await (await fetch("/api/items?" + params)).json();
+  searchResults.innerHTML = items.map(itemCard).join("") || "<p class='text-muted'>No items found.</p>";
+}
+
+/* ================= ITEM DETAILS + CLAIM ================= */
+async function viewItem(id){
+  const item = await (await fetch(`/api/items/${id}`)).json();
+  const img = item.image ? `/uploads/${item.image}` : "";
+  let claimBtn = "";
+  if(item.status === "Found" && currentUser){
+    claimBtn = (currentUser && item.user_id !== undefined)
+      ? `<button class="btn btn-success" onclick="openClaim(${item.id})">Claim This Item</button>` : "";
+  } else if(item.status === "Found" && !currentUser){
+    claimBtn = `<button class="btn btn-success" onclick="showSection('login')">Login to Claim</button>`;
+  }
+  itemDetailsBox.innerHTML = `
+    ${img ? `<img src="${img}" class="mb-3" style="max-height:300px;object-fit:cover;width:100%;border-radius:10px;">` : ""}
+    <div class="d-flex justify-content-between"><h4>${item.item_name}</h4>${badge(item.status)}</div>
+    <p class="text-muted">Reported as <b>${item.type}</b> by ${item.reporter_name}</p>
+    <p><b>Category:</b> ${item.category}</p>
+    <p><b>Description:</b> ${item.description || "—"}</p>
+    <p><b>Location:</b> ${item.location}</p>
+    <p><b>Date:</b> ${item.date}</p>
+    ${claimBtn}
+  `;
+  showSection("item-details");
+}
+
+function openClaim(itemId){
+  document.getElementById("claimItemId").value = itemId;
+  showSection("claim-form");
+}
+
+async function submitClaim(e){
+  e.preventDefault();
+  const fd = new FormData();
+  fd.append("item_id", document.getElementById("claimItemId").value);
+  fd.append("reason", document.getElementById("claimReason").value);
+  fd.append("proof", document.getElementById("claimProof").value);
+  const res = await fetch("/api/claims", { method: "POST", body: fd });
+  const data = await res.json();
+  if(res.ok){ showAlert(data.message, "success"); showSection("my-claims"); }
+  else showAlert(data.error, "danger");
+  return false;
+}
+
+/* ================= MY REPORTS / CLAIMS ================= */
+async function loadMyReports(){
+  const items = await (await fetch("/api/my/items")).json();
+  myReportsBody.innerHTML = items.map(i =>
+    `<tr><td>${i.item_name}</td><td>${i.type}</td><td>${i.location}</td><td>${badge(i.status)}</td></tr>`
+  ).join("") || `<tr><td colspan="4" class="text-muted text-center">No reports yet.</td></tr>`;
+}
+
+async function loadMyClaims(){
+  const claims = await (await fetch("/api/my/claims")).json();
+  myClaimsBody.innerHTML = claims.map(c =>
+    `<tr><td>${c.item_name}</td><td>${c.reason}</td><td>${badge(c.status)}</td></tr>`
+  ).join("") || `<tr><td colspan="3" class="text-muted text-center">No claims yet.</td></tr>`;
+}
+
+/* ================= ADMIN ================= */
+async function loadAdminDashboard(){
+  const stats = await (await fetch("/api/stats")).json();
+  aUsers.textContent = stats.users; aLost.textContent = stats.lost;
+  aFound.textContent = stats.found; aReturned.textContent = stats.returned;
+  aPending.textContent = stats.pending_claims;
+
+  const items = await (await fetch("/api/items")).json();
+  adminItemsBody.innerHTML = items.map(i => `
+    <tr><td>${i.item_name}</td><td>${i.type}</td><td>${i.user_id}</td><td>${badge(i.status)}</td>
+    <td><button class="btn btn-sm btn-outline-danger" onclick="deleteItem(${i.id})">Delete</button></td></tr>
+  `).join("");
+}
+
+async function deleteItem(id){
+  if(!confirm("Delete this report?")) return;
+  await fetch(`/api/admin/items/${id}/delete`, { method: "POST" });
+  loadAdminDashboard();
+}
+
+async function loadAdminClaims(){
+  const claims = await (await fetch("/api/admin/claims")).json();
+  adminClaimsBody.innerHTML = claims.map(c => `
+    <div class="col-md-6"><div class="card p-3">
+      <div class="d-flex justify-content-between"><h6>${c.item_name}</h6>${badge(c.status)}</div>
+      <p class="small mb-1"><b>Student:</b> ${c.student_name} (${c.student_email})</p>
+      <p class="small mb-1"><b>Location:</b> ${c.location}</p>
+      <p class="small mb-2"><b>Reason:</b> ${c.reason}</p>
+      ${c.status === "Pending" ? `
+        <div class="d-flex gap-2">
+          <button class="btn btn-success btn-sm w-100" onclick="decideClaim(${c.id},'approve')">Approve</button>
+          <button class="btn btn-outline-danger btn-sm w-100" onclick="decideClaim(${c.id},'reject')">Reject</button>
+        </div>` : ""}
+    </div></div>
+  `).join("") || "<p class='text-muted'>No claims submitted yet.</p>";
+}
+
+async function decideClaim(id, action){
+  const res = await fetch(`/api/admin/claims/${id}/${action}`, { method: "POST" });
+  const data = await res.json();
+  showAlert(data.message, "success");
+  loadAdminClaims();
+}
+
+/* ================= INIT ================= */
+checkSession().then(loadHome);
+</script>
+</body>
+</html>
